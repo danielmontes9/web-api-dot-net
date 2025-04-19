@@ -11,9 +11,9 @@ namespace web_api_dot_net.Services
     {
         // Mock user - Replace with DB logic in real apps
         private readonly List<User> _users = new()
-    {
-        new User { Username = "admin", Password = "password" }
-    };
+            {
+                new User { Username = "admin", Password = "password" }
+            };
 
         private readonly IConfiguration _config;
 
@@ -25,19 +25,26 @@ namespace web_api_dot_net.Services
         public string Authenticate(string username, string password)
         {
             var user = _users.SingleOrDefault(u => u.Username == username && u.Password == password);
-            if (user == null) return null;
+            if (user == null) return string.Empty; // Return an empty string instead of null to match the interface
 
             // Create token
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_config["Jwt:Key"]);
+            var key = _config["Jwt:Key"];
+
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new InvalidOperationException("JWT key is not configured.");
+            }
+
+            var keyBytes = Encoding.ASCII.GetBytes(key);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[] {
-                new Claim(ClaimTypes.Name, user.Username)
-            }),
+                        new Claim(ClaimTypes.Name, user.Username)
+                    }),
                 Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes),
                     SecurityAlgorithms.HmacSha256Signature)
             };
 

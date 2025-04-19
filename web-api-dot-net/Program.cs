@@ -16,7 +16,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
-        var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
+        var jwtKey = builder.Configuration["Jwt:Key"];
+        if (string.IsNullOrEmpty(jwtKey))
+        {
+            throw new InvalidOperationException("JWT Key is not configured in the application settings.");
+        }
+
+        var key = Encoding.ASCII.GetBytes(jwtKey);
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
